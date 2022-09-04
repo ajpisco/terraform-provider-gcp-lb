@@ -16,10 +16,6 @@ variable "mode" {
   }
 }
 
-# Scheme can be "EXTERNAL", "EXTERNAL_MANAGED" or "INTERNAL_SELF_MANAGED"
-# EXTERNAL - External Global Load Balancing (HTTP(S) LB, External TCP/UDP LB, SSL Proxy)
-# EXTERNAL_MANAGED - Global external HTTP(S) load balancers
-# INTERNAL_SELF_MANAGED - Internal Global HTTP(S) LB
 variable "scheme" {
   type        = string
   description = "scheme of the load balancer"
@@ -34,9 +30,37 @@ variable "scheme" {
   }
 }
 
+variable "protocol" {
+  type        = string
+  description = "Protocol to be used by the Load Balancer. Can be HTTP or TCP"
+
+  validation {
+    condition = anytrue([
+      var.protocol == "HTTP",
+      var.protocol == "TCP",
+    ])
+    error_message = "Load Balancer protocol should be one of: HTTP or TCP"
+  }
+}
+
 variable "frontends" {
-  type        = map(any)
   description = "Defines the structure of frontends (multiple can be set)"
+
+  #   validation {
+  #     condition = anytrue([
+  #       var.frontends.*.protocol == "HTTP",
+  #       var.frontends.*.protocol == "HTTPS",
+  #       var.frontends.*.protocol == "TCP",
+  #     ])
+  #     error_message = "Frontends protocol should be one of: HTTP, HTTPS or TCP"
+  #   }
+
+  #   validation {
+  #     condition = anytrue([
+  #       for k in var.frontends : k.*.protocol == "HTTsP"
+  #     ])
+  #     error_message = "Load Balancer protocol should be one of: HTTP or TCP"
+  #   }
 }
 
 variable "backends" {
@@ -46,16 +70,23 @@ variable "backends" {
 variable "url_maps" {
   type        = list(any)
   description = "Defines the url-paths to be used by the LB"
+  default = []
 }
 
-variable "private_key" {
+variable "region" {
   type        = string
-  description = "The write-only private key in PEM format"
+  description = "Region which regional resources will be deployed"
   default     = null
 }
 
-variable "certificate" {
+variable "network" {
   type        = string
-  description = "The certificate in PEM format"
+  description = "Network which regional resources will be deployed"
+  default     = null
+}
+
+variable "subnetwork" {
+  type        = string
+  description = "Subnetwork which regional resources will be deployed"
   default     = null
 }

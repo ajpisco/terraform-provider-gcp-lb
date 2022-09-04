@@ -1,13 +1,7 @@
-output "frontends" {
-  value = var.frontends
-}
-output "backends" {
-  value = var.backends
+output "global_addresses" {
+  value = google_compute_global_address.global_address
 }
 
-output "test" {
-  value = var.backends[local.default_backend[0]].type
+output "regional_addresses" {
+  value = google_compute_address.regional_address
 }
-# output "bd_name" {
-#   value = values(mso_schema_template_bd.bd).*.name
-# }

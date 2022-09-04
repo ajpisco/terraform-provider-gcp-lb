@@ -1,24 +1,36 @@
 # Global HTTP Load balancer
 
-variable "global_http_frontends" {
-  default = {
+module "global_http_load_balancer" {
+  source = "./modules/lb"
+
+  name     = "dummy"
+  scheme   = "EXTERNAL_MANAGED"
+  mode     = "GLOBAL"
+  protocol = "HTTP"
+
+  frontends = {
     global-f1 = {
       region = null
       # For GLOBAL LB ip_version can be IPV4 or IP6
       ip_version = "IPV4"
+      protocol   = "HTTP"
     },
-    # global-f2 = {
-    #   region        = null
-    #   ip_version    = "IPV6"
-    # }
-
+    global-f3 = {
+      region     = null
+      ip_version = "IPV4"
+      protocol   = "HTTPS"
+      ssl = {
+        certificate_id = "projects/ajpisco/global/sslCertificates/cert"
+        domains        = ["example2.com"]
+        private_key = file("example.com.key")
+        certificate = file("example.com.csr")
+      }
+    },
   }
-}
 
-# One backend should have default_backend as true which will route every non defined path to it
-# Type can be SERVICE (for MIGs) or BUCKET
-variable "global_http_backends" {
-  default = {
+  # One backend should have default_backend as true which will route every non defined path to it
+  # Type can be SERVICE (for MIGs) or BUCKET
+  backends = {
     global-b1 = {
       default_backend = true
       type            = "SERVICE"
@@ -61,10 +73,7 @@ variable "global_http_backends" {
 
     },
   }
-}
-
-variable "url_maps" {
-  default = [
+  url_maps = [
     {
       hosts = ["*", "anyot-her.host"]
       rules = [
@@ -89,23 +98,6 @@ variable "url_maps" {
   ]
 }
 
-module "global_http_load_balancer" {
-  source = "./modules/lb"
-
-  name      = "dummy"
-  scheme    = "EXTERNAL_MANAGED"
-  mode      = "GLOBAL"
-  frontends = var.global_http_frontends
-  backends  = var.global_http_backends
-  url_maps  = var.url_maps
-}
-
-output "frontends" {
-  value = module.global_http_load_balancer.frontends
-}
-output "backends" {
-  value = module.global_http_load_balancer.backends
-}
-output "test" {
-  value = module.global_http_load_balancer.test
+output "global_http_addresses" {
+  value = module.global_http_load_balancer.global_addresses
 }
