@@ -14,7 +14,7 @@ resource "google_compute_global_forwarding_rule" "global_rule" {
   # Only create this resource if mode == GLOBAL HTTP
   for_each = {
     for k, v in var.frontends : k => v
-    if(var.mode == "GLOBAL" && var.protocol == "HTTP" )
+    if(var.mode == "GLOBAL" && var.protocol == "HTTP")
   }
 
   name = "${var.name}-${each.key}-rule"
@@ -55,15 +55,15 @@ resource "google_compute_forwarding_rule" "rule" {
   name = "${var.name}-${each.key}-rule"
   target = (
     var.mode == "REGIONAL" && var.protocol == "HTTP"
-  ) ? (
+    ) ? (
     each.value.protocol == "HTTP" ? (
       google_compute_region_target_http_proxy.default[each.key].self_link
-    ) : (
+      ) : (
       google_compute_region_target_https_proxy.default[each.key].self_link
     )
   ) : null
-  ip_address            = google_compute_address.regional_address[each.key].address
-  ip_protocol           = var.protocol
+  ip_address  = google_compute_address.regional_address[each.key].address
+  ip_protocol = var.protocol
   port_range = ((var.mode == "REGIONAL" && each.value.protocol == "HTTP") || each.value.protocol == "TCP") ? (
     "80"
     ) : (
@@ -72,7 +72,7 @@ resource "google_compute_forwarding_rule" "rule" {
   load_balancing_scheme = var.scheme == "INTERNAL_SELF_MANAGED" ? "INTERNAL_MANAGED" : var.scheme
   region                = var.mode == "REGIONAL" ? var.region : null
   network               = var.mode == "REGIONAL" ? var.network : null
-  subnetwork               = var.mode == "REGIONAL" ? var.subnetwork : null
+  subnetwork            = var.mode == "REGIONAL" ? var.subnetwork : null
   backend_service = (
     var.protocol == "TCP"
   ) ? google_compute_region_backend_service.region_backend_service[var.url_maps[0].rules[0].target].self_link : null
@@ -99,7 +99,7 @@ resource "google_compute_region_target_http_proxy" "default" {
   }
 
   name    = "${var.name}-${each.key}-region-http-proxy"
-  region = each.value["region"]
+  region  = each.value["region"]
   url_map = join("", google_compute_region_url_map.default.*.self_link)
 }
 
@@ -110,7 +110,7 @@ resource "google_compute_target_https_proxy" "default" {
     if(v.protocol == "HTTPS" && var.mode == "GLOBAL")
   }
 
-  name    = "${var.name}-${each.key}-https-proxy"
+  name = "${var.name}-${each.key}-https-proxy"
   url_map = (var.mode == "GLOBAL") ? (
     join("", google_compute_url_map.default.*.self_link)
     ) : (
@@ -135,7 +135,7 @@ resource "google_compute_region_target_https_proxy" "default" {
     if(v.protocol == "HTTPS" && var.mode == "REGIONAL")
   }
 
-  name    = "${var.name}-${each.key}-region-https-proxy"
+  name   = "${var.name}-${each.key}-region-https-proxy"
   region = each.value["region"]
   url_map = (var.mode == "GLOBAL") ? (
     join("", google_compute_url_map.default.*.self_link)
@@ -183,7 +183,7 @@ resource "google_compute_region_ssl_certificate" "default" {
   }
 
   name        = "${var.name}-${each.key}-cert"
-  region = each.value["region"]
+  region      = each.value["region"]
   private_key = each.value.ssl.private_key
   certificate = each.value.ssl.certificate
 

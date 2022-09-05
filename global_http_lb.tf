@@ -12,7 +12,7 @@ module "global_http_load_balancer" {
     global-f1 = {
       region = null
       # For GLOBAL LB ip_version can be IPV4 or IP6
-      ip_version = "IPV4"
+      ip_version = "IPV6"
       protocol   = "HTTP"
     },
     global-f3 = {
@@ -22,14 +22,12 @@ module "global_http_load_balancer" {
       ssl = {
         certificate_id = "projects/ajpisco/global/sslCertificates/cert"
         domains        = ["example2.com"]
-        private_key = file("example.com.key")
-        certificate = file("example.com.csr")
+        private_key    = file("example.com.key")
+        certificate    = file("example.com.csr")
       }
     },
   }
 
-  # One backend should have default_backend as true which will route every non defined path to it
-  # Type can be SERVICE (for MIGs) or BUCKET
   backends = {
     global-b1 = {
       default_backend = true

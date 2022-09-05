@@ -5,18 +5,15 @@ module "global_TCP_load_balancer" {
   scheme   = "EXTERNAL"
   mode     = "REGIONAL"
   protocol = "TCP"
-  region = "europe-west2"
+  region   = "europe-west2"
 
   frontends = {
     regional-tcp-f1 = {
       ip_version = "IPV4"
       protocol   = "TCP"
-      region = "europe-west2"
+      region     = "europe-west2"
     },
   }
-
-  # One backend should have default_backend as true which will route every non defined path to it
-  # Type can be SERVICE (for MIGs) or BUCKET
   backends = {
     regional-tcp-b1 = {
       default_backend = true
@@ -43,7 +40,7 @@ module "global_TCP_load_balancer" {
       rules = [
         {
           target = "regional-tcp-b1"
-        }
+        },
       ]
     },
   ]

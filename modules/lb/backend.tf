@@ -1,8 +1,8 @@
 resource "google_compute_url_map" "default" {
   count = var.protocol == "HTTP" && var.mode == "GLOBAL" ? 1 : 0
-  name            = "${var.name}-url-map"
+  name  = "${var.name}-url-map"
   default_service = (local.default_backend_type == "SERVICE") ? (
-      google_compute_backend_service.backend_service[local.default_backend[0]].self_link
+    google_compute_backend_service.backend_service[local.default_backend[0]].self_link
     ) : (
     google_compute_backend_bucket.backend_bucket[local.default_backend[0]].self_link
   )
@@ -20,11 +20,11 @@ resource "google_compute_url_map" "default" {
     for_each = toset(var.url_maps)
     content {
 
-      name            = replace(join("", path_matcher.value.hosts), "/[-.*]/", "a")
+      name = replace(join("", path_matcher.value.hosts), "/[-.*]/", "a")
       default_service = (local.default_backend_type == "SERVICE") ? (
         var.mode == "GLOBAL" ? (
           google_compute_backend_service.backend_service[local.default_backend[0]].self_link
-        ) : (
+          ) : (
           google_compute_region_backend_service.region_backend_service[local.default_backend[0]].self_link
         )
         ) : (
@@ -39,7 +39,7 @@ resource "google_compute_url_map" "default" {
           service = (var.backends[path_rule.value.target].type == "SERVICE") ? (
             var.mode == "GLOBAL" ? (
               google_compute_backend_service.backend_service[path_rule.value.target].self_link
-            ) : (
+              ) : (
               google_compute_region_backend_service.region_backend_service[path_rule.value.target].self_link
             )
             ) : (
@@ -53,12 +53,12 @@ resource "google_compute_url_map" "default" {
 }
 
 resource "google_compute_region_url_map" "default" {
-  count = var.protocol == "HTTP" && var.mode == "REGIONAL" ? 1 : 0
-  name            = "${var.name}-region-url-map"
-  region        = var.region
+  count  = var.protocol == "HTTP" && var.mode == "REGIONAL" ? 1 : 0
+  name   = "${var.name}-region-url-map"
+  region = var.region
 
   default_service = (local.default_backend_type == "SERVICE") ? (
-      google_compute_region_backend_service.region_backend_service[local.default_backend[0]].self_link
+    google_compute_region_backend_service.region_backend_service[local.default_backend[0]].self_link
     ) : (
     google_compute_backend_bucket.backend_bucket[local.default_backend[0]].self_link
   )
@@ -76,9 +76,9 @@ resource "google_compute_region_url_map" "default" {
     for_each = toset(var.url_maps)
     content {
 
-      name            = replace(join("", path_matcher.value.hosts), "/[-.*]/", "a")
+      name = replace(join("", path_matcher.value.hosts), "/[-.*]/", "a")
       default_service = (local.default_backend_type == "SERVICE") ? (
-          google_compute_region_backend_service.region_backend_service[local.default_backend[0]].self_link
+        google_compute_region_backend_service.region_backend_service[local.default_backend[0]].self_link
         ) : (
         google_compute_backend_bucket.backend_bucket[local.default_backend[0]].self_link
       )
@@ -89,7 +89,7 @@ resource "google_compute_region_url_map" "default" {
 
           paths = path_rule.value.path
           service = (var.backends[path_rule.value.target].type == "SERVICE") ? (
-              google_compute_region_backend_service.region_backend_service[path_rule.value.target].self_link
+            google_compute_region_backend_service.region_backend_service[path_rule.value.target].self_link
             ) : (
             google_compute_backend_bucket.backend_bucket[path_rule.value.target].self_link
           )
@@ -159,8 +159,8 @@ resource "google_compute_region_backend_service" "region_backend_service" {
     for k, v in var.backends : k => v
     if(v.type == "SERVICE" && var.mode == "REGIONAL")
   }
-  name          = "${var.name}-${each.key}-region-backend"
-  region        = var.region
+  name   = "${var.name}-${each.key}-region-backend"
+  region = var.region
 
   port_name = each.value["config"]["port_name"]
   protocol  = each.value["config"]["protocol"]

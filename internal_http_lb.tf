@@ -1,36 +1,34 @@
 module "internal_http_load_balancer" {
   source = "./modules/lb"
 
-  name     = "dummy-internal-http"
-  scheme   = "INTERNAL_SELF_MANAGED"
-  mode     = "REGIONAL"
-  protocol = "HTTP"
-  region = "europe-west2"
-  network = "default"
+  name       = "dummy-internal-http"
+  scheme     = "INTERNAL_SELF_MANAGED"
+  mode       = "REGIONAL"
+  protocol   = "HTTP"
+  region     = "europe-west2"
+  network    = "default"
   subnetwork = "default"
 
   frontends = {
     internal-http-f1 = {
-      region = "europe-west2"
-      ip_version = "IPV4"
-      protocol   = "HTTP"
+      region       = "europe-west2"
+      ip_version   = "IPV4"
+      protocol     = "HTTP"
       network_tier = "PREMIUM"
     },
     internal-http-f3 = {
-      region = "europe-west2"
-      ip_version = "IPV4"
-      protocol   = "HTTPS"
+      region       = "europe-west2"
+      ip_version   = "IPV4"
+      protocol     = "HTTPS"
       network_tier = "PREMIUM"
       ssl = {
         certificate_id = "projects/ajpisco/regions/europe-west2/sslCertificates/cenas"
-        private_key = file("example.com.key")
-        certificate = file("example.com.csr")
+        private_key    = file("example.com.key")
+        certificate    = file("example.com.csr")
       }
     },
   }
-
-  # One backend should have default_backend as true which will route every non defined path to it
-  # Type can be SERVICE (for MIGs) or BUCKET
+  
   backends = {
     internal-http-b1 = {
       default_backend = true
@@ -49,7 +47,7 @@ module "internal_http_load_balancer" {
         affinity_cookie_ttl_sec         = 0
         security_policy                 = ""
         balancing_mode                  = "UTILIZATION"
-        capacity_scaler = 1.0
+        capacity_scaler                 = 1.0
       }
     },
     internal-http-b2 = {
@@ -57,10 +55,10 @@ module "internal_http_load_balancer" {
       type            = "SERVICE"
 
       config = {
-        protocol       = "HTTP"
-        target         = "https://www.googleapis.com/compute/v1/projects/ajpisco/zones/europe-west2-c/instanceGroups/instance-group-4"
-        port_name      = "http"
-        balancing_mode = "UTILIZATION"
+        protocol        = "HTTP"
+        target          = "https://www.googleapis.com/compute/v1/projects/ajpisco/zones/europe-west2-c/instanceGroups/instance-group-4"
+        port_name       = "http"
+        balancing_mode  = "UTILIZATION"
         capacity_scaler = 1.0
       }
     },
