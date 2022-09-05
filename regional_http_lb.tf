@@ -47,7 +47,10 @@ module "regional_http_load_balancer" {
         security_policy                 = ""
         balancing_mode                  = "UTILIZATION"
         capacity_scaler                 = 1.0
-      }
+      },
+      health_check = {
+        port       = 80
+      },
     },
     regional-http-b2 = {
       default_backend = false
@@ -60,6 +63,9 @@ module "regional_http_load_balancer" {
         balancing_mode  = "UTILIZATION"
         capacity_scaler = 1.0
       }
+      health_check = {
+        port       = 80
+      },
     },
   }
   url_maps = [

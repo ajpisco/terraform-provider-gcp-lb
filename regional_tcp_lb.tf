@@ -33,6 +33,10 @@ module "global_TCP_load_balancer" {
         security_policy                 = ""
         balancing_mode                  = "CONNECTION"
       }
+
+      health_check = {
+        port       = 80
+      }
     },
   }
   url_maps = [

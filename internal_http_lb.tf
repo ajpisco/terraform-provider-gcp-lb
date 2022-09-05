@@ -49,6 +49,10 @@ module "internal_http_load_balancer" {
         balancing_mode                  = "UTILIZATION"
         capacity_scaler                 = 1.0
       }
+
+      health_check = {
+        port       = 80
+      }
     },
     internal-http-b2 = {
       default_backend = false
@@ -60,6 +64,10 @@ module "internal_http_load_balancer" {
         port_name       = "http"
         balancing_mode  = "UTILIZATION"
         capacity_scaler = 1.0
+      }
+
+      health_check = {
+        port       = 80
       }
     },
   }
