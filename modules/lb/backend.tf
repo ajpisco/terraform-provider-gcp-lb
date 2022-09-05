@@ -115,7 +115,7 @@ resource "google_compute_backend_service" "backend_service" {
   enable_cdn                      = lookup(each.value.config, "enable_cdn", false)
   custom_request_headers          = lookup(each.value.config, "custom_request_headers", null)
   custom_response_headers         = lookup(each.value.config, "custom_response_headers", null)
-  health_checks                   = [google_compute_health_check.default[0].self_link]
+  health_checks                   = [google_compute_health_check.default[each.key].self_link]
   session_affinity                = lookup(each.value.config, "session_affinity", "NONE")
   affinity_cookie_ttl_sec         = lookup(each.value.config, "affinity_cookie_ttl_sec", 0)
   security_policy                 = lookup(each.value.config, "security_policy", "")
@@ -168,7 +168,7 @@ resource "google_compute_region_backend_service" "region_backend_service" {
   timeout_sec                     = lookup(each.value.config, "timeout_sec", 5)
   connection_draining_timeout_sec = lookup(each.value.config, "connection_draining_timeout_sec", 300)
   enable_cdn                      = lookup(each.value.config, "enable_cdn", false)
-  health_checks                   = [google_compute_region_health_check.default[0].self_link]
+  health_checks                   = [google_compute_region_health_check.default[each.key].self_link]
   session_affinity                = lookup(each.value.config, "session_affinity", "NONE")
   affinity_cookie_ttl_sec         = lookup(each.value.config, "affinity_cookie_ttl_sec", 0)
   load_balancing_scheme           = var.scheme == "INTERNAL_SELF_MANAGED" ? "INTERNAL_MANAGED" : var.scheme

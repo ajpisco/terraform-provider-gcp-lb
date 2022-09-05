@@ -87,6 +87,11 @@ This module supports creating multiple frontends, backends and their mappings al
 | config.max_rate_per_instance           | number | The max requests per second (RPS) that a single backend instance can handle                                                       | true                       |
 | config.max_rate_per_endpoint           | number | The max requests per second (RPS) that a single backend network endpoint can handle                                               | true                       |
 | config.max_utilization                 | number | Used when balancingMode is UTILIZATION. This ratio defines the CPU utilization target for the group                               | true                       |
+| health_check.port                      | number | The port number for the health check request                                                                                      | true                       |
+| health_check.check_interval_sec        | number | How often (in seconds) to send a health check                                                                                     | true                       |
+| health_check.timeout_sec               | number | How long (in seconds) to wait before claiming failure                                                                             | true                       |
+| health_check.healthy_threshold         | number | A so-far unhealthy instance will be marked healthy after this many consecutive successes                                          | true                       |
+| health_check.unhealthy_threshold       | number | A so-far healthy instance will be marked unhealthy after this many consecutive failures                                           | true                       |
 
 - Rules (can't be added to variables validation): 
   - When Load Balancer mode is REGIONAL, backends balancing_mode must be CONNECTION

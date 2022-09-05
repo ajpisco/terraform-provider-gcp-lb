@@ -11,8 +11,7 @@ module "global_http_load_balancer" {
   frontends = {
     global-f1 = {
       region = null
-      # For GLOBAL LB ip_version can be IPV4 or IP6
-      ip_version = "IPV6"
+      ip_version = "IPV4"
       protocol   = "HTTP"
     },
     global-f3 = {
@@ -34,7 +33,7 @@ module "global_http_load_balancer" {
       type            = "SERVICE"
 
       config = {
-        protocol                        = "HTTP"
+        protocol                        = "HTTPS"
         target                          = "https://www.googleapis.com/compute/v1/projects/ajpisco/zones/europe-west1-b/instanceGroups/instance-group-1"
         port_name                       = "http"
         timeout_sec                     = 10
@@ -49,6 +48,14 @@ module "global_http_load_balancer" {
         max_rate                        = 1
         max_utilization                 = 0
       }
+
+      health_check = {
+        port       = 80
+        check_interval_sec = 10
+        timeout_sec = 10
+        healthy_threshold = 3
+        unhealthy_threshold = 3
+      }
     },
     global-b2 = {
       default_backend = false
@@ -59,6 +66,10 @@ module "global_http_load_balancer" {
         target         = "https://www.googleapis.com/compute/v1/projects/ajpisco/zones/europe-west1-b/instanceGroups/instance-group-hostname"
         port_name      = "http"
         balancing_mode = "UTILIZATION"
+      }
+
+      health_check = {
+        port       = 80
       }
     },
     global-b3 = {
