@@ -1,138 +1,58 @@
 resource "google_compute_url_map" "default" {
-  count = var.protocol == "HTTP" && var.mode == "GLOBAL" ? 1 : 0
-  name  = "${var.name}-url-map"
-  default_service = (local.default_backend_type == "SERVICE") ? (
-    google_compute_backend_service.backend_service[local.default_backend[0]].self_link
+  count = (var.protocol == "HTTP" || var.protocol == "HTTPS") && var.mode == "GLOBAL" ? 1 : 0
+
+  name  = local.google_compute_url_map_name
+  default_service = (var.backend_type == "SERVICE") ? (
+      google_compute_backend_service.backend_service[0].self_link
     ) : (
-    google_compute_backend_bucket.backend_bucket[local.default_backend[0]].self_link
-  )
-
-  dynamic "host_rule" {
-    for_each = toset(var.url_maps)
-    content {
-      hosts = host_rule.value.hosts
-      # replace all the special characters from hosts to create a unique path_matcher
-      path_matcher = replace(join("", host_rule.value.hosts), "/[-.*]/", "a")
-    }
-  }
-
-  dynamic "path_matcher" {
-    for_each = toset(var.url_maps)
-    content {
-
-      name = replace(join("", path_matcher.value.hosts), "/[-.*]/", "a")
-      default_service = (local.default_backend_type == "SERVICE") ? (
-        var.mode == "GLOBAL" ? (
-          google_compute_backend_service.backend_service[local.default_backend[0]].self_link
-          ) : (
-          google_compute_region_backend_service.region_backend_service[local.default_backend[0]].self_link
-        )
-        ) : (
-        google_compute_backend_bucket.backend_bucket[local.default_backend[0]].self_link
-      )
-
-      dynamic "path_rule" {
-        for_each = toset(path_matcher.value.rules)
-        content {
-
-          paths = path_rule.value.path
-          service = (var.backends[path_rule.value.target].type == "SERVICE") ? (
-            var.mode == "GLOBAL" ? (
-              google_compute_backend_service.backend_service[path_rule.value.target].self_link
-              ) : (
-              google_compute_region_backend_service.region_backend_service[path_rule.value.target].self_link
-            )
-            ) : (
-            google_compute_backend_bucket.backend_bucket[path_rule.value.target].self_link
-          )
-
-        }
-      }
-    }
-  }
+      google_compute_backend_bucket.backend_bucket[0].self_link
+    )
 }
 
 resource "google_compute_region_url_map" "default" {
-  count  = var.protocol == "HTTP" && var.mode == "REGIONAL" ? 1 : 0
-  name   = "${var.name}-region-url-map"
+  count  = (var.protocol == "HTTP" || var.protocol == "HTTPS") && var.mode == "REGIONAL" ? 1 : 0
+
+  name   = local.google_compute_region_url_map_name
   region = var.region
 
-  default_service = (local.default_backend_type == "SERVICE") ? (
-    google_compute_region_backend_service.region_backend_service[local.default_backend[0]].self_link
+  default_service = (var.backend_type == "SERVICE") ? (
+    google_compute_region_backend_service.region_backend_service[0].self_link
     ) : (
-    google_compute_backend_bucket.backend_bucket[local.default_backend[0]].self_link
+    google_compute_backend_bucket.backend_bucket[0].self_link
   )
-
-  dynamic "host_rule" {
-    for_each = toset(var.url_maps)
-    content {
-      hosts = host_rule.value.hosts
-      # replace all the special characters from hosts to create a unique path_matcher
-      path_matcher = replace(join("", host_rule.value.hosts), "/[-.*]/", "a")
-    }
-  }
-
-  dynamic "path_matcher" {
-    for_each = toset(var.url_maps)
-    content {
-
-      name = replace(join("", path_matcher.value.hosts), "/[-.*]/", "a")
-      default_service = (local.default_backend_type == "SERVICE") ? (
-        google_compute_region_backend_service.region_backend_service[local.default_backend[0]].self_link
-        ) : (
-        google_compute_backend_bucket.backend_bucket[local.default_backend[0]].self_link
-      )
-
-      dynamic "path_rule" {
-        for_each = toset(path_matcher.value.rules)
-        content {
-
-          paths = path_rule.value.path
-          service = (var.backends[path_rule.value.target].type == "SERVICE") ? (
-            google_compute_region_backend_service.region_backend_service[path_rule.value.target].self_link
-            ) : (
-            google_compute_backend_bucket.backend_bucket[path_rule.value.target].self_link
-          )
-        }
-      }
-    }
-  }
 }
 
 resource "google_compute_backend_service" "backend_service" {
-  for_each = {
-    for k, v in var.backends : k => v
-    if(v.type == "SERVICE" && var.mode == "GLOBAL")
-  }
+  count = (var.backend_type == "SERVICE" && var.mode == "GLOBAL") ? 1 : 0
 
-  name = "${var.name}-${each.key}-backend"
+  name = local.google_compute_backend_service_name
 
-  port_name = each.value["config"]["port_name"]
-  protocol  = each.value["config"]["protocol"]
+  port_name = local.backend_config.port_name
+  protocol  = local.backend_config.protocol
 
-  timeout_sec                     = lookup(each.value.config, "timeout_sec", 5)
-  connection_draining_timeout_sec = lookup(each.value.config, "connection_draining_timeout_sec", 300)
-  enable_cdn                      = lookup(each.value.config, "enable_cdn", false)
-  custom_request_headers          = lookup(each.value.config, "custom_request_headers", null)
-  custom_response_headers         = lookup(each.value.config, "custom_response_headers", null)
-  health_checks                   = [google_compute_health_check.default[each.key].self_link]
-  session_affinity                = lookup(each.value.config, "session_affinity", "NONE")
-  affinity_cookie_ttl_sec         = lookup(each.value.config, "affinity_cookie_ttl_sec", 0)
-  security_policy                 = lookup(each.value.config, "security_policy", "")
+  timeout_sec                     = local.backend_config.timeout_sec
+  connection_draining_timeout_sec = local.backend_config.connection_draining_timeout_sec
+  enable_cdn                      = local.backend_config.enable_cdn
+  custom_request_headers          = local.backend_config.custom_request_headers
+  custom_response_headers         = local.backend_config.custom_response_headers
+  health_checks                   = [google_compute_health_check.default[0].self_link]
+  session_affinity                = local.backend_config.session_affinity
+  affinity_cookie_ttl_sec         = local.backend_config.affinity_cookie_ttl_sec
+  security_policy                 = local.backend_config.security_policy
   load_balancing_scheme           = var.scheme
 
   backend {
-    group = each.value["config"]["target"]
+    group = local.backend_config.target
 
-    balancing_mode               = lookup(each.value.config, "balancing_mode")
-    capacity_scaler              = lookup(each.value.config, "capacity_scaler", 1)
-    max_connections              = lookup(each.value.config, "max_connections", null)
-    max_connections_per_instance = lookup(each.value.config, "max_connections_per_instance", null)
-    max_connections_per_endpoint = lookup(each.value.config, "max_connections_per_endpoint", null)
-    max_rate                     = lookup(each.value.config, "max_rate", null)
-    max_rate_per_instance        = lookup(each.value.config, "max_rate_per_instance", null)
-    max_rate_per_endpoint        = lookup(each.value.config, "max_rate_per_endpoint", null)
-    max_utilization              = lookup(each.value.config, "max_utilization", 0)
+    balancing_mode               = local.backend_config.balancing_mode
+    capacity_scaler              = local.backend_config.capacity_scaler
+    max_connections              = local.backend_config.max_connections
+    max_connections_per_instance = local.backend_config.max_connections_per_instance
+    max_connections_per_endpoint = local.backend_config.max_connections_per_endpoint
+    max_rate                     = local.backend_config.max_rate
+    max_rate_per_instance        = local.backend_config.max_rate_per_instance
+    max_rate_per_endpoint        = local.backend_config.max_rate_per_endpoint
+    max_utilization              = local.backend_config.max_utilization
   }
 
   log_config {
@@ -142,48 +62,43 @@ resource "google_compute_backend_service" "backend_service" {
 }
 
 resource "google_compute_backend_bucket" "backend_bucket" {
-  for_each = {
-    for k, v in var.backends : k => v
-    if(v.type == "BUCKET")
-  }
+  count = (var.backend_type == "BUCKET") ? 1 : 0
 
-  name = "${var.name}-${each.key}-backend"
+  name = local.google_compute_backend_bucket_name
 
-  bucket_name = lookup(each.value.config, "bucket_name")
-  enable_cdn  = lookup(each.value.config, "enable_cdn", false)
+  bucket_name = local.backend_config.bucket_name
+  enable_cdn  = local.backend_config.enable_cdn
 
 }
 
 resource "google_compute_region_backend_service" "region_backend_service" {
-  for_each = {
-    for k, v in var.backends : k => v
-    if(v.type == "SERVICE" && var.mode == "REGIONAL")
-  }
-  name   = "${var.name}-${each.key}-region-backend"
+  count = (var.backend_type == "SERVICE" && var.mode == "REGIONAL") ? 1 : 0
+
+  name   = local.google_compute_region_backend_service_name
   region = var.region
 
-  port_name = each.value["config"]["port_name"]
-  protocol  = each.value["config"]["protocol"]
+  port_name = local.backend_config.port_name
+  protocol  = local.backend_config.protocol
 
-  timeout_sec                     = lookup(each.value.config, "timeout_sec", 5)
-  connection_draining_timeout_sec = lookup(each.value.config, "connection_draining_timeout_sec", 300)
-  enable_cdn                      = lookup(each.value.config, "enable_cdn", false)
-  health_checks                   = [google_compute_region_health_check.default[each.key].self_link]
-  session_affinity                = lookup(each.value.config, "session_affinity", "NONE")
-  affinity_cookie_ttl_sec         = lookup(each.value.config, "affinity_cookie_ttl_sec", 0)
+  timeout_sec                     = local.backend_config.timeout_sec
+  connection_draining_timeout_sec = local.backend_config.connection_draining_timeout_sec
+  enable_cdn                      = local.backend_config.enable_cdn
+  health_checks                   = [google_compute_region_health_check.default[0].self_link]
+  session_affinity                = local.backend_config.session_affinity
+  affinity_cookie_ttl_sec         = local.backend_config.affinity_cookie_ttl_sec
   load_balancing_scheme           = var.scheme == "INTERNAL_SELF_MANAGED" ? "INTERNAL_MANAGED" : var.scheme
 
   backend {
-    group = each.value["config"]["target"]
+    group = local.backend_config.target
 
-    balancing_mode               = lookup(each.value.config, "balancing_mode")
-    capacity_scaler              = lookup(each.value.config, "capacity_scaler", null)
-    max_connections              = lookup(each.value.config, "max_connections", null)
-    max_connections_per_instance = lookup(each.value.config, "max_connections_per_instance", null)
-    max_connections_per_endpoint = lookup(each.value.config, "max_connections_per_endpoint", null)
-    max_rate                     = lookup(each.value.config, "max_rate", null)
-    max_rate_per_instance        = lookup(each.value.config, "max_rate_per_instance", null)
-    max_rate_per_endpoint        = lookup(each.value.config, "max_rate_per_endpoint", null)
-    max_utilization              = lookup(each.value.config, "max_utilization", null)
+    balancing_mode               = var.protocol == "TCP" ? "CONNECTION" : local.backend_config.balancing_mode
+    capacity_scaler              = var.protocol == "TCP" ? null : local.backend_config.capacity_scaler
+    max_connections              = local.backend_config.max_connections
+    max_connections_per_instance = local.backend_config.max_connections_per_instance
+    max_connections_per_endpoint = local.backend_config.max_connections_per_endpoint
+    max_rate                     = var.protocol == "TCP" ? null : local.backend_config.max_rate
+    max_rate_per_instance        = local.backend_config.max_rate_per_instance
+    max_rate_per_endpoint        = local.backend_config.max_rate_per_endpoint
+    max_utilization              = local.backend_config.max_utilization
   }
 }
