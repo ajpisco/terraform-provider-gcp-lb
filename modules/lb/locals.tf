@@ -19,19 +19,21 @@ locals {
   google_compute_health_check_name = "${var.project}-healthcheck"
   google_compute_region_health_check_name = "${var.project}-regional-healthcheck"
 
+  domains = can(var.frontend_ssl.domains) ? "" : data.google_dns_managed_zone.dns_managed_zone[0].dns_name
   frontend_ssl = merge(
-    tomap({
+    {
+      domains = [local.domains]
       ssl_policy = null
       quic_override = "NONE"
-    }),
+    },
     var.frontend_ssl,
   )
   
   backend_config = merge(
     {
       bucket_name = null
-      protocol = "HTTP"
-      port_name = "http"
+      protocol = "HTTPS"
+      port_name = "https"
       timeout_sec = 10
       connection_draining_timeout_sec = 300
       enable_cdn = false

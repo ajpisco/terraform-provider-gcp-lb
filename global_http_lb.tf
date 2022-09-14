@@ -1,5 +1,4 @@
 # Global HTTP Load balancer
-
 module "global_http_load_balancer" {
   source = "./modules/lb"
 
@@ -11,16 +10,19 @@ module "global_http_load_balancer" {
   # Frontend
   frontend_ip_version   = "IPV4"
   frontend_network_tier = "STANDARD"
-  frontend_ssl = {
-    domains        = ["example2.com"]
-  }
+  # If frontend_ssl is not set, build the domain with a given zone
+  # frontend_ssl = {
+  #   domains        = ["example2.com"]
+  # }
 
   # Backend
   backend_type = "SERVICE"
   backend_config = {
     target = "https://www.googleapis.com/compute/v1/projects/ajpisco/zones/europe-west1-b/instanceGroups/instance-group-1"
-    protocol = "HTTPS"
+    # Default protocol is HTTPS
+    # protocol = "HTTPS"
     port_name = "https"
+    security_policy = "my-policy"
   }
   backend_health_check = {
     port = 443
