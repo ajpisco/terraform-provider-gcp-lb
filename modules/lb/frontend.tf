@@ -9,21 +9,14 @@ resource "google_compute_global_address" "global_address" {
 
 resource "google_compute_global_forwarding_rule" "global_rule" {
   # Only create this resource if mode == GLOBAL HTTP
-  count = (var.mode == "GLOBAL" && var.protocol == "HTTP") ? 1 : 0
+  count = (var.mode == "GLOBAL" && (var.protocol == "HTTP" || var.protocol == "HTTPS")) ? 1 : 0
 
   name = local.google_compute_global_forwarding_rule_name
-  # If frontend protocol is HTTP, create http-proxy, otherwise create https-proxy
-  target = (var.protocol == "HTTP") ? (
-    google_compute_target_http_proxy.default[0].self_link
-    ) : (
-    google_compute_target_https_proxy.default[0].self_link
-  )
+
+  target = google_compute_target_https_proxy.default[0].self_link
+
   ip_address = google_compute_global_address.global_address[0].address
-  port_range = (var.protocol == "HTTP") ? (
-    "80"
-    ) : (
-    "443"
-  )
+  port_range = "443"
   load_balancing_scheme = var.scheme
 }
 
@@ -51,12 +44,9 @@ resource "google_compute_forwarding_rule" "rule" {
   target = (
     var.mode == "REGIONAL" && (var.protocol == "HTTP" || var.protocol == "HTTPS")
     ) ? (
-    var.protocol == "HTTP" ? (
-      google_compute_region_target_http_proxy.default[0].self_link
-      ) : (
-      google_compute_region_target_https_proxy.default[0].self_link
-    )
-  ) : null
+    google_compute_region_target_https_proxy.default[0].self_link
+    ) : null
+    
   ip_address  = google_compute_address.regional_address[0].address
   ip_protocol = var.protocol
   port_range = (
@@ -80,26 +70,9 @@ resource "google_compute_forwarding_rule" "rule" {
 
 }
 
-resource "google_compute_target_http_proxy" "default" {
-  # Only create this resource if frontend.protocol == HTTP and GLOBAL
-  count = (var.protocol == "HTTP" && var.mode == "GLOBAL") ? 1 : 0
-
-  name    = local.google_compute_target_http_proxy_name
-  url_map = join("", google_compute_url_map.default.*.self_link)
-}
-
-resource "google_compute_region_target_http_proxy" "default" {
-  # Only create this resource if frontend.protocol == HTTP and REGIONAL
-  count = (var.protocol == "HTTP" && var.mode == "REGIONAL") ? 1 : 0
-
-  name    = local.google_compute_region_target_http_proxy_name
-  region  = var.region
-  url_map = join("", google_compute_region_url_map.default.*.self_link)
-}
-
 resource "google_compute_target_https_proxy" "default" {
   # Only create this resource if frontend.protocol == HTTPS and GLOBAL
-  count = (var.protocol == "HTTPS" && var.mode == "GLOBAL") ? 1 : 0
+  count = ((var.protocol == "HTTP" || var.protocol == "HTTPS") && var.mode == "GLOBAL") ? 1 : 0
 
   name = local.google_compute_target_https_proxy_name
   url_map = (var.mode == "GLOBAL") ? (
@@ -121,7 +94,7 @@ resource "google_compute_target_https_proxy" "default" {
 
 resource "google_compute_region_target_https_proxy" "default" {
   # Only create this resource if frontend.protocol == HTTPS and REGIONAL
-  count = (var.protocol == "HTTPS" && var.mode == "REGIONAL") ? 1 : 0
+  count = ((var.protocol == "HTTP" || var.protocol == "HTTPS") && var.mode == "REGIONAL") ? 1 : 0
 
   name   = local.google_compute_region_target_https_proxy_name
   region = var.region
@@ -133,6 +106,8 @@ resource "google_compute_region_target_https_proxy" "default" {
 
   ssl_certificates = compact(
     concat(
+      # We can't use managed certificates here because Terraform doesn't support regional managed certificates. 
+      # We must create certificate and pass its id or pass private_key and certificate
       can(local.frontend_ssl.certificate_id) ? [local.frontend_ssl.certificate_id] : [],
       can(local.frontend_ssl.private_key) && can(local.frontend_ssl.certificate) ? [google_compute_region_ssl_certificate.default[0].self_link] : [],
     ),
@@ -177,8 +152,8 @@ resource "google_compute_region_ssl_certificate" "default" {
 resource "google_compute_managed_ssl_certificate" "default" {
   # Only create this resource if frontend.protocol == HTTPS and domains were provided
   count = (
-    var.protocol == "HTTPS" &&
-    (can(local.frontend_ssl.domains) ? (coalesce(local.frontend_ssl.domains, null) != null ? true : false) : false)
+    (var.protocol == "HTTP" || var.protocol == "HTTPS") &&
+    ((can(local.frontend_ssl.private_key) && can(local.frontend_ssl.certificate)) || can(local.frontend_ssl.certificate_id) ? false : true)
   ) ? 1 : 0
 
   name = local.google_compute_managed_ssl_certificate_name
