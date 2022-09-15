@@ -61,8 +61,16 @@ resource "google_compute_forwarding_rule" "rule" {
   )
   load_balancing_scheme = var.scheme == "INTERNAL_SELF_MANAGED" ? "INTERNAL_MANAGED" : var.scheme
   region                = var.mode == "REGIONAL" ? var.region : null
-  network               = can(var.network) ? var.network : data.google_compute_subnetwork.default[0].network
-  subnetwork            = can(var.subnetwork) ? var.subnetwork : data.google_compute_subnetwork.default[0].id
+  network               = can(var.network) ? var.network : (
+    var.scheme == "INTERNAL_SELF_MANAGED" ?
+    data.google_compute_subnetwork.private_subnet[0].network :
+    data.google_compute_subnetwork.public_subnet[0].network
+  )
+  subnetwork            = can(var.subnetwork) ? var.subnetwork : (
+    var.scheme == "INTERNAL_SELF_MANAGED" ?
+    data.google_compute_subnetwork.private_subnet[0].id :
+    data.google_compute_subnetwork.public_subnet[0].id
+  )
   backend_service = (
     var.protocol == "TCP"
   ) ? google_compute_region_backend_service.region_backend_service[0].self_link : null
